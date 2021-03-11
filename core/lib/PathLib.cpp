@@ -6,6 +6,7 @@
 #include "Materials.h"
 #include "Settings.h"
 #include "Lighting.h"
+#include "brdfs/Lambert.h"
 
 #include "GarrysMod/Lua/Interface.h"
 
@@ -83,21 +84,12 @@ Tracer::Vector3 uniformSampling(const double& r1, const double& r2, const Tracer
 		
 }
 
-void createCoordinateSystem(const Tracer::Vector3& N, Tracer::Vector3& Nt, Tracer::Vector3& Nb)
-{	
-	using namespace Tracer; 
-
-	if (std::abs(N.x) > std::abs(N.y))
-		Nt = Tracer::Vector3(N.z, 0, -N.x) / sqrt(N.x * N.x + N.z * N.z);
-	else
-		Nt = Tracer::Vector3(0, -N.z, N.y) / sqrt(N.y * N.y + N.z * N.z);
-	Nb = N.cross(Nt);
-}
 
 // https://github.com/100PXSquared/gmod-binary-tracer/blob/56f482c041909494497d22dcf5c45d4f507aa022/Binary%20Module/shaders.cpp#L57 th an kyou 
 Tracer::Vector3 lambertEvaluate(Tracer::Vector3 pathCol, Tracer::Vector3 dir, Tracer::Vector3 normal) {
 	return pathCol * (M_1_PI * dir.dot(normal));
 }
+
 
 int oneDebug = 1;
 
@@ -148,9 +140,17 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 		createCoordinateSystem(hitNormal, Nt, Nb);
 		*/
 
+		double pdf = 1 / (2 * M_PI);
+
 		for (int i = 0; i < samples; i++) { // ayo i++ or ++i
-			Vector3 theUnitVec = uniformSampling(unif(randEngine), unif(randEngine), hitNormal).getNormalized();
-			
+			double r1 = unif(randEngine);
+			double r2 = unif(randEngine);
+
+			Vector3 theUnitVec = BRDF::Lambert::Sampler(r1, r2);
+			Vector3 Nt, Nb;
+
+			BRDF::Lambert::CreateCoordinateSystem(hitNormal, Nt, Nb);
+
 			/*
 			Vector3 theUnit = Vector3(
 				theUnitVec.x * Nb.x + theUnitVec.y * hitNormal.x + theUnitVec.z * Nt.x,
@@ -158,10 +158,9 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 				theUnitVec.x * Nb.z + theUnitVec.y * hitNormal.z + theUnitVec.z * Nt.z
 			).getNormalized();
 			*/
-			
-			Vector3 alignedHitnormal = hitNormal.rotateByAngle(Vector3(90.0, 0, 0));
+			// Vector3 alignedNorm = hitNormal.rotateByAngle(Vector3(0.0, 0, 0.0));
 
-			Vector3 theUnit = theUnitVec.rotateByAngle(90.0 * hitNormal).getNormalized();
+			Vector3 theUnit = BRDF::Lambert::SampleWorld(theUnitVec, hitNormal, Nt, Nb);
 
 			if (isnan(theUnit.x)) {
 				i = i - 1;
@@ -169,29 +168,25 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 			}
 
 			Ray* newRay = new Ray;
-			newRay->orig = ray->HitPos + (hitNormal * BIAS);
+			newRay->orig = ray->HitPos + (theUnit * BIAS);
 			newRay->dir = theUnit;
 			newRay->ignoreID = ray->Object->objectID;
 
 			TraceResult* theResult = newRay->cast();
 
-			double cos_theta = theUnit.dot(hitNormal);
-			double pdf = cos_theta * M_1_PI;
-
 			
-			Vector3 theIndirectColor = (cos_theta * (doTrace(theResult, depth + 1, maxDepth, 1))) / pdf;
+			Vector3 theIndirectColor = doTrace(theResult, depth + 1, maxDepth, 1);
 			
 
 			// Vector3 theIndirectColor = ((doTrace(theResult, depth + 1, maxDepth, 1)) * cos_theta) / pdf;
 
-			indirectLighting = indirectLighting + theIndirectColor;
+			indirectLighting += theIndirectColor;
 
 			if (oneDebug < 5) {
 				luaPrint("THE ONE SINGULAR DEBUG.\nThe indirect color: " + vectorAsAString(theIndirectColor));
 				luaPrint("theUnit: " + vectorAsAString(theUnit));
 				luaPrint("theUnitVec: " + vectorAsAString(theUnitVec));
-				luaPrint("alignedHitnormal: " + vectorAsAString(alignedHitnormal));
-				luaPrint("cos_theta: " + std::to_string(cos_theta));
+				luaPrint("cos_theta: " + std::to_string(r1));
 				luaPrint("direct lighting: " + vectorAsAString(directLighting));
 				luaPrint("pdf: " + std::to_string(pdf));
 				 
@@ -210,8 +205,8 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 
 	// TODO: implement the reflecting shit from sf
 
-	//Vector3 finalHitColor = (directLighting / PI + indirectLighting * 2.0) * (emittance); // All dis shit from scratchapixel 
-	Vector3 finalHitColor = (indirectLighting) * emittance;
+	Vector3 finalHitColor = (directLighting / PI + 2.0 * indirectLighting) * (emittance / PI); // All dis shit from scratchapixel 
+	//Vector3 finalHitColor = (indirectLighting) * emittance;
 	
 	delete mat;
 

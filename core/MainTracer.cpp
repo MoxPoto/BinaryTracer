@@ -142,7 +142,11 @@ namespace Tracer {
 						if (x == (int)QUALITY - 1) { luaPrint("Normal: " + vectorAsAString(traceResult->HitNormal)); };
 
 						//pixels[x * (int)QUALITY + y] = Vector3(traceResult->u, traceResult->v, 1.0 - traceResult->u - traceResult->v);
-						pixels[x * (int)QUALITY + y] = (traceResult->HitNormal + Vector3(1)) / 2;
+						pixels[x * (int)QUALITY + y] = Vector3(
+							(traceResult->HitNormal.x + 1.0) / 2.0,
+							(traceResult->HitNormal.y + 1.0) / 2.0,
+							(traceResult->HitNormal.z)
+						);
 					}
 					else {
 						PathLib::PathResult pathResult = PathLib::PathTrace(traceResult, SAMPLES, MAX_DEPTH);
