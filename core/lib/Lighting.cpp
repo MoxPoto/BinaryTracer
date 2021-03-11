@@ -36,7 +36,7 @@ bool shadowCheck(Tracer::TraceResult* result) {
 
 namespace Tracer {
 	namespace Lighting {
-		double LIGHT_RANGE = 160;
+		double LIGHT_RANGE = 360;
 		double LIGHT_BRIGHTNESS = 1;
 
 		std::vector<std::shared_ptr<Object>> LightObjects;
@@ -94,7 +94,7 @@ namespace Tracer {
 				Vector3 dir = (light->position - result->HitPos).getNormalized();
 
 				Ray* testRay = new Ray;
-				testRay->orig = result->HitPos - (result->HitNormal);
+				testRay->orig = result->HitPos + (result->HitNormal);
 				testRay->dir = dir;
 				testRay->ignoreID = result->Object->objectID; // Dont hit the same object we JUST hit again
 

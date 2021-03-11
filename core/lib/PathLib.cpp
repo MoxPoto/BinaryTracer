@@ -29,6 +29,10 @@
 
 double PI = M_PI;
 constexpr double BIAS = 0.001;
+
+std::default_random_engine randEngine;
+std::uniform_real_distribution<double> unif(0.0, 1.0);
+
 /*
 local function uniformSampling(r1, r2) -- SO MUCH THX TO http://www.rorydriscoll.com/2009/01/07/better-sampling/
 	local r = math.sqrt(r1)
@@ -108,10 +112,6 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 
 	// initialize a uniform distribution between 0 and 1
 
-
-	std::default_random_engine randEngine;
-	std::uniform_real_distribution<double> unif(0.0, 1.0);
-
 	// HI ITS ME NOT SOME STACKOVERFLOW GUY OK THAT CODE ABOVE COMES FROM: https://stackoverflow.com/a/31091422
 
 	// TODO: Implement water again like last time
@@ -133,12 +133,9 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 		// double pdf = 1.0 / (2.0 * PI);
 		
 		Vector3 hitNormal = ray->HitNormal; // cache it
-
-		/*
 		Vector3 Nt, Nb;
 
-		createCoordinateSystem(hitNormal, Nt, Nb);
-		*/
+		BRDF::Lambert::CreateCoordinateSystem(hitNormal, Nt, Nb);
 
 		double pdf = 1 / (2 * M_PI);
 
@@ -147,9 +144,6 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 			double r2 = unif(randEngine);
 
 			Vector3 theUnitVec = BRDF::Lambert::Sampler(r1, r2);
-			Vector3 Nt, Nb;
-
-			BRDF::Lambert::CreateCoordinateSystem(hitNormal, Nt, Nb);
 
 			/*
 			Vector3 theUnit = Vector3(
@@ -175,10 +169,10 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 			TraceResult* theResult = newRay->cast();
 
 			
-			Vector3 theIndirectColor = doTrace(theResult, depth + 1, maxDepth, 1);
+			//Vector3 theIndirectColor = doTrace(theResult, depth + 1, maxDepth, 1);
 			
 
-			// Vector3 theIndirectColor = ((doTrace(theResult, depth + 1, maxDepth, 1)) * cos_theta) / pdf;
+			Vector3 theIndirectColor = ((doTrace(theResult, depth + 1, maxDepth, 1)) * r1) / pdf;
 
 			indirectLighting += theIndirectColor;
 

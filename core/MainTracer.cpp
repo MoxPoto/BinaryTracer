@@ -45,7 +45,7 @@ std::string makeFileName(int QUALITY, int SAMPLES) {
 namespace Tracer {
 
 	double QUALITY = RES;
-	int SAMPLES = 10;
+	int SAMPLES = 50;
 	int MAX_DEPTH = 2;
 
 	double DISTANCE = 1;
@@ -125,10 +125,11 @@ namespace Tracer {
 					*/
 
 
-					//rayDir = (CAM_FORWARD + (xx * CAM_RIGHT) + (yy * CAM_UP)).getNormalized();
+					//rayDir = &(CAM_FORWARD + (x * CAM_RIGHT) + (y * CAM_UP)).getNormalized();
 					//rayDir = Vector3(1 / 2.2, 1 - ((double)x / QUALITY) - 0.5, 1 - ((double)y / QUALITY) - 0.5).getRotated(CAMERA_DIR).getNormalized();
 
-					calculateViewPlane(x, y, *rayPos, *rayDir);
+					calculateViewPlane(x + 1, y + 1, *rayPos, *rayDir);
+
 
 					if (x == (int)QUALITY - 1) { luaPrint("Thread ID: " + std::to_string(omp_get_thread_num())); }
 
