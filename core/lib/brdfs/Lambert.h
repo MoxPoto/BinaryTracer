@@ -22,6 +22,7 @@ namespace Tracer {
 			Vector3 Sampler(double r1, double r2);
 			void CreateCoordinateSystem(const Vector3& hitnormal, Vector3& Nt, Vector3& Nb);
 			Vector3 SampleWorld(const Vector3& sample, const Vector3& hitnormal, const Vector3& Nt, const Vector3& Nb);
+			double GetPDF(const Vector3& sample, const Vector3& normal);
 		};
 	}
 }

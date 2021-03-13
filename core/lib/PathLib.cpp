@@ -28,7 +28,6 @@
 // this bitch the REAL big ass library
 
 double PI = M_PI;
-constexpr double BIAS = 0.001;
 
 std::default_random_engine randEngine;
 std::uniform_real_distribution<double> unif(0.0, 1.0);
@@ -130,12 +129,14 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 	directLighting = Lighting::CalculateLighting(ray) / 255.0;
 
 	if (depth + 1 <= maxDepth) {
-		// double pdf = 1.0 / (2.0 * PI);
-		
 		Vector3 hitNormal = ray->HitNormal; // cache it
+		Vector3 biased = ray->HitPos;
+
+		
 		Vector3 Nt, Nb;
 
 		BRDF::Lambert::CreateCoordinateSystem(hitNormal, Nt, Nb);
+		
 
 		double pdf = 1 / (2 * M_PI);
 
@@ -144,16 +145,6 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 			double r2 = unif(randEngine);
 
 			Vector3 theUnitVec = BRDF::Lambert::Sampler(r1, r2);
-
-			/*
-			Vector3 theUnit = Vector3(
-				theUnitVec.x * Nb.x + theUnitVec.y * hitNormal.x + theUnitVec.z * Nt.x,
-				theUnitVec.x * Nb.y + theUnitVec.y * hitNormal.y + theUnitVec.z * Nt.y,
-				theUnitVec.x * Nb.z + theUnitVec.y * hitNormal.z + theUnitVec.z * Nt.z
-			).getNormalized();
-			*/
-			// Vector3 alignedNorm = hitNormal.rotateByAngle(Vector3(0.0, 0, 0.0));
-
 			Vector3 theUnit = BRDF::Lambert::SampleWorld(theUnitVec, hitNormal, Nt, Nb);
 
 			if (isnan(theUnit.x)) {
@@ -162,15 +153,13 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 			}
 
 			Ray* newRay = new Ray;
-			newRay->orig = ray->HitPos + (theUnit * BIAS);
+			newRay->orig = biased;
 			newRay->dir = theUnit;
-			newRay->ignoreID = ray->Object->objectID;
+			// newRay->ignoreID = ray->Object->objectID;
 
 			TraceResult* theResult = newRay->cast();
-
-			
-			//Vector3 theIndirectColor = doTrace(theResult, depth + 1, maxDepth, 1);
-			
+			// double pdf = BRDF::Lambert::GetPDF(theUnit, hitNormal);
+			// double cos_theta = theUnit.dot(hitNormal);
 
 			Vector3 theIndirectColor = ((doTrace(theResult, depth + 1, maxDepth, 1)) * r1) / pdf;
 

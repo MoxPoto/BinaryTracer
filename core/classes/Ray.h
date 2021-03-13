@@ -11,6 +11,7 @@
 namespace Tracer {
 
     extern Vector3 SUN_DIR;
+    constexpr double BIAS = 0.001;
 
     struct TraceResult {
         bool Hit = false;

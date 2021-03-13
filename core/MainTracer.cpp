@@ -46,7 +46,7 @@ namespace Tracer {
 
 	double QUALITY = RES;
 	int SAMPLES = 50;
-	int MAX_DEPTH = 2;
+	int MAX_DEPTH = 4;
 
 	double DISTANCE = 1;
 
@@ -167,7 +167,7 @@ namespace Tracer {
 
 		// IMAGE RENDERING \\
 
-		uint8_t* pixelsFrame = new uint8_t[(uint8_t)QUALITY * (uint8_t)QUALITY * 3]; // I casted them to uint8's because I would overflow 
+		uint8_t* pixelsFrame = new uint8_t[QUALITY * QUALITY * 3]; 
 
 		int index = 0;
 		for (int y = QUALITY - 1; y >= 0; --y)

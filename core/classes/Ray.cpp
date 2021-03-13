@@ -97,46 +97,6 @@ bool rayTriangleIntersect(
     return true; // this ray hits the triangle 
 #endif 
 }
-
-/*
-bool traceEnt(const Vector3& origin, const Vector3& direction, HitData& out, const Entity* ent, double& tMin, double& uMin, double& vMin, int hitVert[3])
-{
-    // localise ray to entity's transform
-    Vector3 adjOrig = (origin - ent->pos).getRotated(ent->invAng);
-    Vector3 adjDir = direction.getRotated(ent->invAng);
-
-    bool hit = false;
-    double t = MAX_DOUBLE, u, v;
-
-    // iterate sub meshes
-    for (int i = 0; i < ent->meshes.size(); i++) {
-        const Mesh* mesh = &ent->meshes[i];
-
-        // iterate tris
-        for (int j = 0; j < mesh->verts.size(); j += 3) {
-            if (triIntersect(
-                adjOrig, adjDir,
-                mesh->verts[j].pos,
-                mesh->verts[j + 1].pos,
-                mesh->verts[j + 2].pos,
-                t, u, v
-            ) && t < tMin) {
-                // assign tri hit if it's closest
-                tMin = t;
-                uMin = u;
-                vMin = v;
-                hitVert[1] = i;
-                hitVert[2] = j;
-                hit = true;
-            }
-        }
-    }
-
-    return hit;
-}
-
-*/
-
 bool onedDebug = false;
 
 namespace Tracer {
@@ -176,7 +136,6 @@ namespace Tracer {
                     result->u = u;
                     result->v = v;
                     result->HitColor = theTri.color;
-                    result->HitPos = orig + (dir * t); // t means the time of the ray, aka how much it traveled
 
                     //hitNormal = (1 - uv.x - uv.y) * n0 + uv.x * n1 + uv.y * n2; 
 
@@ -188,8 +147,11 @@ namespace Tracer {
                     Vector3 theU = (theTri.v1 - theTri.v0);
                     Vector3 theV = (theTri.v2 - theTri.v0);
 
-                    result->HitNormal = -(theV.cross(theU)).getNormalized();
+                    result->HitNormal = (theV.cross(theU)).getNormalized();
                     */
+
+                    result->HitPos = orig + (dir * t) + result->HitNormal * BIAS; // t means the time of the ray, aka how much it traveled
+                    
 
                     if (onedDebug == false) {
                         

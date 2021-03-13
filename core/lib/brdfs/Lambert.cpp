@@ -18,12 +18,16 @@ namespace Tracer {
 	namespace BRDF {
 
 		Vector3 Lambert::Sampler(double r1, double r2) {
-			double sinTheta = sqrt(1.0 - r1 * r1);
-			double phi = 2.0 * M_PI * r2;
-			double x = sinTheta * cos(phi);
-			double z = sinTheta * sin(phi);
+			double r = sqrt(r1);
+			double theta = r2 * 2. * M_PI;
 
-			return Vector3(x, r1, z);
+			double x = r * cos(theta);
+			double y = r * sin(theta);
+
+			// Project z up to the unit hemisphere
+			double z = sqrt(1.0 - x * x - y * y);
+
+			return Vector3(x, y, z);
 		}
 
 		void Lambert::CreateCoordinateSystem(const Vector3& N, Vector3& Nt, Vector3& Nb) {
@@ -41,6 +45,10 @@ namespace Tracer {
 				sample.x * Nt.z + sample.y * Nb.z + sample.z * hitnormal.z);
 
 			return sampleWorld;
+		}
+
+		double Lambert::GetPDF(const Vector3& sample, const Vector3& normal) {
+			return sample.dot(normal) * M_1_PI;
 		}
 	}
 }
