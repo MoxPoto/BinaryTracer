@@ -29,7 +29,7 @@
 
 #define M_PI 3.14159
 
-#define RES 128
+#define RES 512
 
 std::string makeFileName(int QUALITY, int SAMPLES) {
 	char theBuffer[400];
@@ -41,6 +41,73 @@ std::string makeFileName(int QUALITY, int SAMPLES) {
 	return newStr;
 }
 
+void _renderScene(const double& QUALITY, Tracer::Vector3* pixels) {
+	using namespace Tracer;
+
+	for (int y = 0; y < (int)QUALITY; ++y) {
+	#pragma omp parallel for num_threads(8) 
+		for (int x = 0; x < (int)QUALITY; ++x) {
+
+			// [x][y] is rewritten as x*sizeY+y
+
+			Vector3* rayDir = new Vector3(0, 0, 0);
+			Vector3* rayPos = new Vector3(0, 0, 0);
+
+			calculateViewPlane(x + 1, y + 1, *rayPos, *rayDir);
+
+			Ray* theRay = new Ray;
+			theRay->orig = *rayPos;
+			theRay->dir = *rayDir;
+
+			TraceResult* traceResult = theRay->cast();
+
+			PathLib::PathResult pathResult = PathLib::PathTrace(traceResult, SAMPLES, MAX_DEPTH);
+
+			pixels[x * (int)QUALITY + y] = pathResult.Color;
+
+
+			delete rayPos;
+			delete rayDir;
+			delete theRay;
+			delete traceResult; // Clean up ALL the memory
+		}
+
+	}
+
+	finishedTrace = true;
+	// let the lua side turn off tracing mode
+
+	// IMAGE RENDERING \\
+
+	uint8_t* pixelsFrame = new uint8_t[QUALITY * QUALITY * 3];
+
+	int index = 0;
+	for (int y = QUALITY - 1; y >= 0; --y)
+	{
+		for (int x = 0; x < QUALITY; ++x)
+		{
+			int fakeY = (QUALITY - 1) - y; // get inverse so the image does not flip..
+			int fakeX = (QUALITY - 1) - x;
+
+			Vector3 colorStruct = pixels[fakeX * (int)QUALITY + fakeY].toColor();
+
+			int ir = colorStruct.x;
+			int ig = colorStruct.y;
+			int ib = colorStruct.z;
+
+			pixelsFrame[index++] = (int)ir;
+			pixelsFrame[index++] = (int)ig;
+			pixelsFrame[index++] = (int)ib;
+		}
+	}
+
+
+	stbi_write_png(fileName.c_str(), QUALITY, QUALITY, 3, pixelsFrame, QUALITY * 3);
+
+	delete[] pixelsFrame;
+	delete[] pixels; // Kill the pixels off, we r done
+}
+
 
 namespace Tracer {
 
@@ -49,7 +116,6 @@ namespace Tracer {
 	int MAX_DEPTH = 4;
 
 	double DISTANCE = 1;
-
 	double FOV = 65;
 
 	const bool NORMAL_DEBUG = false;
@@ -64,6 +130,11 @@ namespace Tracer {
 	Vector3 CAM_UP;
 
 	std::string fileName = makeFileName(QUALITY, SAMPLES);
+
+	bool finishedTrace = true;
+	bool tracing = false;
+
+	// todo: add duration again
 
 	void luaPrint(const std::string& message) {
 		if (LUA_STATE != nullptr) {
@@ -98,103 +169,16 @@ namespace Tracer {
 	}
 
 	void StartRender(GarrysMod::Lua::ILuaBase* theLua) {
-		Vector3* pixels = new Vector3[RES * RES]; // i had to move the giant pixel array to da heap
+		tracing = true;
+		finishedTrace = false;
+
+		Vector3* pixels = new Vector3[RES * RES]; // i had to move the giant pixel array to da heap, also deleted in _renderScene, so don't count on it later
 		
 		omp_set_dynamic(0); // removes dynamic teams cuz fuck them
 
-		for (int y = 0; y < (int)QUALITY; ++y) {
-				#pragma omp parallel for num_threads(8) 
-				for (int x = 0; x < (int)QUALITY; ++x) {
+		std::thread renderThread(_renderScene, QUALITY, pixels);
 
-					// [x][y] is rewritten as x*sizeY+y
-
-					// Vector(1/FOV,1-(x/res)-0.5,1-(y/res)-0.5):getRotated(angles):getNormalized()
-
-					Vector3* rayDir = new Vector3(0, 0, 0);
-					Vector3* rayPos = new Vector3(0, 0, 0);
-
-					//rayDir = Vector3(1 / 2.2, 1 - ((double)x / QUALITY) - 0.5, 1 - ((double)y / QUALITY) - 0.5).getRotated(CAMERA_DIR).getNormalized();
-
-					//calculateViewPlane(x, y, rayPos, rayDir);
-
-					/*
-					float xx = (2 * ((x + 0.5) * invWidth) - 1) * angle * aspectratio;
-					float yy = (1 - 2 * ((y + 0.5) * invHeight)) * angle;
-					Vec3f raydir(xx, yy, -1);
-					raydir.normalize();
-					*/
-
-
-					//rayDir = &(CAM_FORWARD + (x * CAM_RIGHT) + (y * CAM_UP)).getNormalized();
-					//rayDir = Vector3(1 / 2.2, 1 - ((double)x / QUALITY) - 0.5, 1 - ((double)y / QUALITY) - 0.5).getRotated(CAMERA_DIR).getNormalized();
-
-					calculateViewPlane(x + 1, y + 1, *rayPos, *rayDir);
-
-
-					if (x == (int)QUALITY - 1) { luaPrint("Thread ID: " + std::to_string(omp_get_thread_num())); }
-
-					Ray* theRay = new Ray;
-					theRay->orig = *rayPos;
-					theRay->dir = *rayDir;
-
-					TraceResult* traceResult = theRay->cast();
-					
-					if (NORMAL_DEBUG) {
-						if (x == (int)QUALITY - 1) { luaPrint("Normal: " + vectorAsAString(traceResult->HitNormal)); };
-
-						//pixels[x * (int)QUALITY + y] = Vector3(traceResult->u, traceResult->v, 1.0 - traceResult->u - traceResult->v);
-						pixels[x * (int)QUALITY + y] = Vector3(
-							(traceResult->HitNormal.x + 1.0) / 2.0,
-							(traceResult->HitNormal.y + 1.0) / 2.0,
-							(traceResult->HitNormal.z)
-						);
-					}
-					else {
-						PathLib::PathResult pathResult = PathLib::PathTrace(traceResult, SAMPLES, MAX_DEPTH);
-
-						pixels[x * (int)QUALITY + y] = pathResult.Color;
-
-					}
-
-
-					delete rayPos;
-					delete rayDir;
-					delete theRay;
-					delete traceResult; // Clean up ALL the memory
-				}
-	
-		}
-
-		// IMAGE RENDERING \\
-
-		uint8_t* pixelsFrame = new uint8_t[QUALITY * QUALITY * 3]; 
-
-		int index = 0;
-		for (int y = QUALITY - 1; y >= 0; --y)
-		{
-			for (int x = 0; x < QUALITY; ++x)
-			{
-				int fakeY = (QUALITY - 1) - y; // get inverse so the image does not flip..
-				int fakeX = (QUALITY - 1) - x;
-
-				Vector3 colorStruct = pixels[fakeX*(int)QUALITY+fakeY].toColor();
-
-				int ir = colorStruct.x; 
-				int ig = colorStruct.y;
-				int ib = colorStruct.z;
-
-				pixelsFrame[index++] = (int)ir;
-				pixelsFrame[index++] = (int)ig;
-				pixelsFrame[index++] = (int)ib;
-			}
-		}
-
-
-		stbi_write_png(fileName.c_str(), QUALITY, QUALITY, 3, pixelsFrame, QUALITY * 3);
-
-		delete[] pixelsFrame;
-		delete[] pixels; // Kill the pixels off, we r done
-
+		renderThread.detach(); // Run in a seperate hardware thread to not interrupt gmod
 	}
 
 	void ChangeCamera(const Vector3& newPos, const Matrix<double>& newDir) {
