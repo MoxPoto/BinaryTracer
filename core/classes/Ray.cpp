@@ -141,7 +141,7 @@ namespace Tracer {
 
                     //result->HitNormal = theTri.n1 * (1.0 - u - v) + theTri.n2 * u + theTri.n3 * v;
                     
-                    result->HitNormal = (theTri.n1);
+                    result->HitNormal = (-theTri.n1);
                     
                     /*
                     Vector3 theU = (theTri.v1 - theTri.v0);

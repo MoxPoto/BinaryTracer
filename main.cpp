@@ -4,13 +4,16 @@
 #include "core/MainTracer.h"
 #include "core/classes/Vector3.h"
 #include "core/classes/Object.h"
-
 #include "core/lib/Lighting.h"
+
+#include "core/lib/SerialHandler.h"
 
 #include <chrono>
 #include <iostream>
 
 #include <memory>
+
+#define VERSION "1.0.1"
 
 using namespace GarrysMod::Lua;
 
@@ -23,63 +26,21 @@ void luaPrint(ILuaBase* LUA, const std::string& message) {
     LUA->Pop();
 }
 
-
-void dumpStack(ILuaBase* inst)
-{
-    std::string toPrint = "";
-
-    int max = inst->Top();
-    for (int i = 1; i <= max; i++) {
-        toPrint += "[" + std::to_string(i) + "] ";
-        switch (inst->GetType(i)) {
-        case Type::Angle:
-            toPrint += "Angle: (" + std::to_string((int)inst->GetAngle(i).x) + ", " + std::to_string((int)inst->GetAngle(i).y) + ", " + std::to_string((int)inst->GetAngle(i).z) + ")";
-            break;
-        case Type::Bool:
-            toPrint += "Bool: " + inst->GetBool(i);
-            break;
-        case Type::Function:
-            toPrint += "Function";
-            break;
-        case Type::Nil:
-            toPrint += "nil";
-            break;
-        case Type::Number:
-            toPrint += "Number: " + std::to_string(inst->GetNumber(i));
-            break;
-        case Type::String:
-            toPrint += "String: " + (std::string)inst->GetString(i);
-            break;
-        case Type::Table:
-            toPrint += "Table";
-            break;
-        default:
-            toPrint += "Unknown";
-            break;
-        }
-        toPrint += "\n";
-    }
-
-    std::cout << toPrint; // Output to c++ console
-}
-
 std::string vectorAsAString(const Tracer::Vector3& vec) {
     return std::to_string(vec.x) + ", " + std::to_string(vec.y) + ", " + std::to_string(vec.z);
 }
 
 LUA_FUNCTION(PT_StartRender) {
+    if (Tracer::finishedTrace == false && Tracer::tracing) {
+        LUA->ThrowError("The current trace isnt done!");
+    }
+
     luaPrint(LUA, "Current number of objects in virtual scene: " + std::to_string(Tracer::AllObjects.size()));
 
-    auto start = std::chrono::high_resolution_clock::now();
-
 	Tracer::StartRender(LUA);
-
-    auto end = std::chrono::high_resolution_clock::now();
-
-    std::chrono::duration<double> diff = end - start; 
-
-    luaPrint(LUA, "Time spent: " + std::to_string(diff.count()));
     
+    // This doesn't yield anymore
+
 	return 0;
 }
 
@@ -104,9 +65,6 @@ LUA_FUNCTION(PT_CameraChange) {
 }
 
 LUA_FUNCTION(PT_CreateEnt) {
-
-    dumpStack(LUA);
-
     Tracer::Vector3 objColor = Tracer::ConvertVector(LUA->GetVector());
 
     LUA->Pop(1);
@@ -143,8 +101,6 @@ LUA_FUNCTION(PT_CreateEnt) {
     }
 
     LUA->Pop(2); // Pop it off for the normal table
-
-    dumpStack(LUA);
 
     len = LUA->ObjLen();
 
@@ -233,6 +189,14 @@ LUA_FUNCTION(PT_ChangeDist) {
     return 0;
 }
 
+LUA_FUNCTION(InternalPoller) {
+    // Runs in Think hook
+    
+    Tracer::Serial::DoPolling(LUA);
+
+    return 0;
+}
+
 // Called when the module is loaded
 GMOD_MODULE_OPEN()
 {
@@ -243,40 +207,53 @@ GMOD_MODULE_OPEN()
     freopen_s(&pFile, "CONOUT$", "w", stdout);
 
 
-    luaPrint(LUA, "mox's c++ tracer, version 0.4");
+    luaPrint(LUA, "mox's c++ tracer, version " + std::string(VERSION));
 
     Tracer::LUA_STATE = LUA;
 
-
 	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
+
 	LUA->PushString("PT_StartRender");
 	LUA->PushCFunction(PT_StartRender);
 	LUA->SetTable(-3); // `_G.TestFunction = MyExampleFunction`
 
-	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
 	LUA->PushString("PT_CameraChange");
 	LUA->PushCFunction(PT_CameraChange);
 	LUA->SetTable(-3); // `_G.TestFunction = MyExampleFunction`
 
-    LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
     LUA->PushString("PT_CreateEnt");
     LUA->PushCFunction(PT_CreateEnt);
     LUA->SetTable(-3); // `_G.TestFunction = MyExampleFunction`
 
-    LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
     LUA->PushString("PT_ClearAllEnts");
     LUA->PushCFunction(PT_ClearAllEnts);
     LUA->SetTable(-3); // `_G.TestFunction = MyExampleFunction`
 
-    LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
     LUA->PushString("PT_ChangeFOV");
     LUA->PushCFunction(PT_ChangeFOV);
     LUA->SetTable(-3); // `_G.TestFunction = MyExampleFunction`
 
-    LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
     LUA->PushString("PT_ChangeDist");
     LUA->PushCFunction(PT_ChangeDist);
     LUA->SetTable(-3); // `_G.TestFunction = MyExampleFunction`
+
+    LUA->Pop(1); // Pop off global
+
+    Tracer::Serial::Initialize(LUA);
+    // Add poller onto think hook
+    
+    LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
+    LUA->GetField(-1, "hook");
+    LUA->GetField(-1, "Add");
+
+    LUA->PushString("Think");
+    LUA->PushString("pt_internal_poller");
+    LUA->PushCFunction(InternalPoller);
+
+    LUA->Call(3, 0);
+    // Call removed the arguments and the Add function, so we need to pop 2 off the stack to leave it squeaky clean
+
+    LUA->Pop(2);
 
 	return 0;
 }
@@ -286,7 +263,21 @@ GMOD_MODULE_CLOSE()
 {
     FreeConsole();
 
-    luaPrint(LUA, "mox's c++ tracer, version 0.3 - unloaded");
+    Tracer::Serial::Deinitialize(LUA);
+    
+    LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
+    LUA->GetField(-1, "hook");
+    LUA->GetField(-1, "Remove");
+
+    LUA->PushString("Think");
+    LUA->PushString("pt_internal_poller");
+
+    LUA->Call(2, 0);
+    // Call removed the arguments and the Remove function, so we need to pop 2 off the stack to leave it squeaky clean
+
+    LUA->Pop(2);
+
+    luaPrint(LUA, "mox's c++ tracer, version " + std::string(VERSION) + " - unloaded");
 
 	return 0;
 }

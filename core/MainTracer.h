@@ -35,6 +35,9 @@ namespace Tracer {
 	extern Vector3 CAMERA_POS;
 	extern Matrix<double> CAMERA_DIR;
 
+	extern bool finishedTrace;
+	extern bool tracing;
+
 	extern void calculateViewPlane(const int& x, const int& y, Vector3& origin, Vector3& direction);
 
 	extern void luaPrint(const std::string& message);
