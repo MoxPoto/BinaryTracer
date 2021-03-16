@@ -45,6 +45,11 @@ LUA_FUNCTION(PT_StartRender) {
 }
 
 LUA_FUNCTION(PT_CameraChange) {
+    LUA->CheckType(-4, Type::Vector);
+    LUA->CheckType(-3, Type::Vector);
+    LUA->CheckType(-2, Type::Vector);
+    LUA->CheckType(-1, Type::Vector);
+
 	Tracer::Vector3 posChange = Tracer::ConvertVector(LUA->GetVector()); // This quickly converts the lua vector into our vector just for the sake of simplicity
     LUA->Pop(1);
     Tracer::Vector3 up = Tracer::ConvertVector(LUA->GetVector());
@@ -65,6 +70,12 @@ LUA_FUNCTION(PT_CameraChange) {
 }
 
 LUA_FUNCTION(PT_CreateEnt) {
+    LUA->CheckType(-5, Type::Table); // normal table
+    LUA->CheckType(-4, Type::Table); // verts table
+    LUA->CheckType(-3, Type::Vector); // object position
+    LUA->CheckType(-2, Type::Bool); // is a light
+    LUA->CheckType(-1, Type::Vector); // color
+
     Tracer::Vector3 objColor = Tracer::ConvertVector(LUA->GetVector());
 
     LUA->Pop(1);
@@ -178,13 +189,33 @@ LUA_FUNCTION(PT_ClearAllEnts) {
 }
 
 LUA_FUNCTION(PT_ChangeFOV) {
+    LUA->CheckType(-1, Type::Number);
+
     Tracer::FOV = LUA->GetNumber();
 
     return 0;
 }
 
 LUA_FUNCTION(PT_ChangeDist) {
+    LUA->CheckType(-1, Type::Number);
+
     Tracer::DISTANCE = LUA->GetNumber();
+
+    return 0;
+}
+
+LUA_FUNCTION(PT_SetSamples) {
+    LUA->CheckType(-1, Type::Number);
+
+    Tracer::SAMPLES = LUA->GetNumber();
+
+    return 0;
+}
+
+LUA_FUNCTION(PT_SetMaxDepth) {
+    LUA->CheckType(-1, Type::Number);
+
+    Tracer::MAX_DEPTH = LUA->GetNumber();
 
     return 0;
 }
@@ -235,6 +266,14 @@ GMOD_MODULE_OPEN()
 
     LUA->PushString("PT_ChangeDist");
     LUA->PushCFunction(PT_ChangeDist);
+    LUA->SetTable(-3); // `_G.TestFunction = MyExampleFunction`
+
+    LUA->PushString("PT_SetSamples");
+    LUA->PushCFunction(PT_SetSamples);
+    LUA->SetTable(-3); // `_G.TestFunction = MyExampleFunction`
+
+    LUA->PushString("PT_SetMaxDepth");
+    LUA->PushCFunction(PT_SetMaxDepth);
     LUA->SetTable(-3); // `_G.TestFunction = MyExampleFunction`
 
     LUA->Pop(1); // Pop off global

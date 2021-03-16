@@ -29,7 +29,7 @@
 
 #define M_PI 3.14159
 
-#define RES 512
+#define RES 128
 
 std::string makeFileName(int QUALITY, int SAMPLES) {
 	char theBuffer[400];

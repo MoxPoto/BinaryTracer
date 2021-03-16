@@ -44,7 +44,8 @@ function PTLUA_AddObject(ent, isLight)
 
     for k , v in ipairs(theMesh.triangles) do
         local norm = v.normal 
-        
+        // norm:Rotate(Angle(0, -180, 0))
+
         norm = rotateVecMatrix(norm, matrixTransform):GetNormalized()
 
         print("Normal (LUA): " .. tostring(norm))
@@ -92,10 +93,18 @@ end
 
 function PTLUA_AddAllObjects()
     for k , v in pairs(ents.FindByClass("prop_physics")) do 
-        if (v.CPPIGetOwner and v:CPPIGetOwner() == LocalPlayer()) or (game.SinglePlayer()) then 
+        if (CPPI and v:CPPIGetOwner() == LocalPlayer()) or (game.SinglePlayer()) then 
             PTLUA_AddObject(v, ((v:GetMaterial() == "lights/white") and true or false))
         end
     end
+end
+
+function PTLUA_SetSamples(amt)
+    PT_SetSamples(amt)
+end
+
+function PTLUA_SetMaxDepth(amt)
+    PTLUA_SetMaxDepth(amt)
 end
 
 PTLUA_Clear() -- Clear firstly
