@@ -29,7 +29,7 @@
 
 #define M_PI 3.14159
 
-#define RES 512
+#define RES 128
 
 std::string makeFileName(int QUALITY, int SAMPLES) {
 	char theBuffer[400];
@@ -186,10 +186,11 @@ namespace Tracer {
 		CAMERA_POS = newPos;
 	}
 
-	void ChangeSettings(int QUALITY, int SAMPLES, int MAX_DEPTH) {
-		QUALITY = QUALITY;
+	void ChangeSettings(int SAMPLES, int MAX_DEPTH) {
 		SAMPLES = SAMPLES;
 		MAX_DEPTH = MAX_DEPTH;
+
+		fileName = makeFileName(QUALITY, SAMPLES);
 	}
 
 	void LUACameraChange(const Vector3& newPos, const Vector3& forward, const Vector3& right, const Vector3& up) {

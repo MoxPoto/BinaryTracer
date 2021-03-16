@@ -50,7 +50,7 @@ namespace Tracer {
 
 	extern void LUACameraChange(const Vector3& newPos, const Vector3& forward, const Vector3& right, const Vector3& up);
 
-	extern void ChangeSettings(int QUALITY, int SAMPLES, int MAX_DEPTH);
+	extern void ChangeSettings(int SAMPLES, int MAX_DEPTH);
 	extern Settings GetSettings();
 }
 
