@@ -186,10 +186,11 @@ namespace Tracer {
 		CAMERA_POS = newPos;
 	}
 
-	void ChangeSettings(int QUALITY, int SAMPLES, int MAX_DEPTH) {
-		QUALITY = QUALITY;
+	void ChangeSettings(int SAMPLES, int MAX_DEPTH) {
 		SAMPLES = SAMPLES;
 		MAX_DEPTH = MAX_DEPTH;
+
+		fileName = makeFileName(QUALITY, SAMPLES);
 	}
 
 	void LUACameraChange(const Vector3& newPos, const Vector3& forward, const Vector3& right, const Vector3& up) {

@@ -207,7 +207,7 @@ LUA_FUNCTION(PT_ChangeDist) {
 LUA_FUNCTION(PT_SetSamples) {
     LUA->CheckType(-1, Type::Number);
 
-    Tracer::SAMPLES = LUA->GetNumber();
+    Tracer::ChangeSettings(LUA->GetNumber(-1), Tracer::MAX_DEPTH);
 
     return 0;
 }
@@ -215,7 +215,7 @@ LUA_FUNCTION(PT_SetSamples) {
 LUA_FUNCTION(PT_SetMaxDepth) {
     LUA->CheckType(-1, Type::Number);
 
-    Tracer::MAX_DEPTH = LUA->GetNumber();
+    Tracer::ChangeSettings(Tracer::SAMPLES, LUA->GetNumber(-1));
 
     return 0;
 }
