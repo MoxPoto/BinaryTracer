@@ -31,7 +31,7 @@ bool shadowCheck(Tracer::TraceResult* result) {
 	delete skyResult;
 	delete testRay; // better to manually allocate the memory so i can directly delete them since these are so trivial for them to be kept alive
 
-	return (!hitSky);
+	return (hitSky == false); // If the Hit parameter isnt set to true, then we hit the sky 
 }
 
 namespace Tracer {
@@ -74,21 +74,13 @@ namespace Tracer {
 		}
 
 
-		// Calculates lighting by taking the average exposed light to the ray (returns 0-255)
+		// Calculates lighting by taking the average exposed light to the ray (returns 0-1)
 		Vector3 CalculateLighting(TraceResult* result) {
 			double rComp = 0;
 			double gComp = 0;
 			double bComp = 0;
 
 			int num = 0;
-
-			if (shadowCheck(result)) {
-				num = num + 1;
-
-				rComp += SKY_COLOR.x * 255.0;
-				gComp += SKY_COLOR.y * 255.0;
-				bComp += SKY_COLOR.z * 255.0;
-			}
 
 			for (std::shared_ptr<Object> light : LightObjects) {
 				Vector3 dir = (light->position - result->HitPos).getNormalized();
@@ -106,7 +98,7 @@ namespace Tracer {
 
 					double range = 1.0 - fraction;
 
-					Vector3 lightCol = (((light->mainColor * 255.0) * range) * LIGHT_BRIGHTNESS);
+					Vector3 lightCol = ((light->mainColor * range) * LIGHT_BRIGHTNESS);
 
 					if (lightDebug == false) {
 						luaPrint("[LIGHTING]: realrange = " + std::to_string(realRange));

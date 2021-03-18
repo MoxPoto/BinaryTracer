@@ -23,6 +23,8 @@
 #include <random>
 #include <chrono>
 
+#include <iostream>
+
 #include <memory>
 
 // this bitch the REAL big ass library
@@ -103,7 +105,7 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 		return Vector3(0, 0, 0);
 	}
 	if (ray->Hit == false) {
-		return SKY_COLOR;
+		return mainHDRI->getPixelFromRay(ray->Direction);
 	}
 	if (Lighting::IsLight(ray->Object)) {
 		return ray->Object->mainColor;
@@ -126,13 +128,12 @@ Tracer::Vector3 doTrace(Tracer::TraceResult* ray, int depth, int maxDepth, int s
 
 	// THE MEAT OF THE ENTIRE TRACER \\
 
-	directLighting = Lighting::CalculateLighting(ray) / 255.0;
+	directLighting = Lighting::CalculateLighting(ray);
 
 	if (depth + 1 <= maxDepth) {
-		Vector3 hitNormal = ray->HitNormal; // cache it
+		Vector3 hitNormal = -ray->HitNormal; // cache it
 		Vector3 biased = ray->HitPos;
 
-		
 		Vector3 Nt, Nb;
 
 		BRDF::Lambert::CreateCoordinateSystem(hitNormal, Nt, Nb);
@@ -203,7 +204,7 @@ namespace Tracer {
 			PathResult theResult;
 
 			if (result->Hit == false) {
-				theResult.Color = SKY_COLOR;
+				theResult.Color = mainHDRI->getPixelFromRay(result->Direction);
 				theResult.Trace = result;
 
 			}

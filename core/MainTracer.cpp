@@ -5,19 +5,15 @@
 #include "lib/PathLib.h"
 
 #include "omp.h"
-
 #include "GarrysMod/Lua/Interface.h"
-
 #include <thread>
-
 #include <string>
+#include <memory>
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "vendor/stb_image.h"
 
 #define STBI_MSC_SECURE_CRT
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -29,7 +25,7 @@
 
 #define M_PI 3.14159
 
-#define RES 128
+#define RES 256
 
 std::string makeFileName(int QUALITY, int SAMPLES) {
 	char theBuffer[400];
@@ -121,6 +117,7 @@ namespace Tracer {
 	const bool NORMAL_DEBUG = false;
 
 	GarrysMod::Lua::ILuaBase* LUA_STATE = nullptr;
+	std::shared_ptr<HDRI> mainHDRI = std::make_shared<HDRI>(1024, 512, "");
 
 	Vector3 CAMERA_POS = Vector3(1, 1, 1);
 	Matrix<double> CAMERA_DIR(3, 3);

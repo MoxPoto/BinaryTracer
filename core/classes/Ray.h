@@ -22,6 +22,7 @@ namespace Tracer {
         Vector3 HitColor = Vector3(1, 1, 1);
         Vector3 HitPos = Vector3(0, 0, 0);
         Vector3 HitNormal = Vector3(0, 0, 0);
+        Vector3 Direction = Vector3(0, 0, 0);
     };
 
 	class Ray {

@@ -241,6 +241,21 @@ GMOD_MODULE_OPEN()
     luaPrint(LUA, "mox's c++ tracer, version " + std::string(VERSION));
 
     Tracer::LUA_STATE = LUA;
+    
+    Tracer::mainHDRI->filePath = "C:\\pathtracer\\hdrs\\noon_grass_1k.hdr";
+    Tracer::mainHDRI->resX = 1024;
+    Tracer::mainHDRI->resY = 512;
+
+    bool didLoad = Tracer::mainHDRI->load();
+
+    if (!didLoad) {
+        LUA->ThrowError((std::string("OH NO UNABLE TO LOAD HDRI AT ") + Tracer::mainHDRI->filePath).c_str());
+
+        return 0;
+    }
+    else {
+        luaPrint(LUA, std::string("Loaded HDRI at ") + Tracer::mainHDRI->filePath);
+    }
 
 	LUA->PushSpecial(GarrysMod::Lua::SPECIAL_GLOB);
 
