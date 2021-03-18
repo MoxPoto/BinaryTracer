@@ -107,12 +107,12 @@ namespace Tracer {
         ignoreID = -1; // Set the ignore ID to -1 at first
     }
 
-    // Performs a ray-cast TODO: debug and find the thing that keeps causing it to not correctly iterate
+    // Performs a ray-cast 
     TraceResult* Ray::cast() {
         TraceResult* result = new TraceResult;
 
         result->Hit = false;
-
+        result->Direction = dir;
 
         double tMin = MAX_DOUBLE;
 
@@ -136,12 +136,12 @@ namespace Tracer {
                     result->u = u;
                     result->v = v;
                     result->HitColor = theTri.color;
-
+     
                     //hitNormal = (1 - uv.x - uv.y) * n0 + uv.x * n1 + uv.y * n2; 
 
                     //result->HitNormal = theTri.n1 * (1.0 - u - v) + theTri.n2 * u + theTri.n3 * v;
                     
-                    result->HitNormal = (-theTri.n1);
+                    result->HitNormal = (theTri.n1);
                     
                     /*
                     Vector3 theU = (theTri.v1 - theTri.v0);

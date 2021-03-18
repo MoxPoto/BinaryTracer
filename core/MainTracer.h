@@ -10,6 +10,8 @@
 #include "classes/Vector3.h"
 #include "vendor/Matrix.h"
 #include "GarrysMod/Lua/Interface.h"
+#include "classes/HDRI.h"
+#include <memory>
 
 #include <string>
 
@@ -24,6 +26,7 @@ namespace Tracer {
 	extern double FOV;
 
 	extern GarrysMod::Lua::ILuaBase* LUA_STATE;
+	extern std::shared_ptr<HDRI> mainHDRI;
 
 	// SETTINGS STRUCT WHY DID I MAKE THIS HELPPPP
 	extern struct Settings {
